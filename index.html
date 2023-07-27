@@ -16,12 +16,9 @@
     </div>
     <script>
       const visualizer = document.querySelector(".visualizer");
-      const recognition = window.SpeechRecognition || window.webkitSpeechRecognition;;
-      recognition.onresult = function (event) {
-        const transcript =
-          event.results[event.results.length - 1][0].transcript;
-        console.log("Transcript:", transcript);
-      };
+
+      let recognition;
+      let isListening = false;
       let mediaStream;
       function startUserMedia() {
         navigator.mediaDevices
@@ -31,20 +28,11 @@
             const ctx = new (window.AudioContext || window.AudioContext)();
             const analyser = ctx.createAnalyser();
             const source = ctx.createMediaStreamSource(mediaStream);
-            recognition.continuous = true;
-            recognition.interimResults = false;
-            recognition.lang = "en-US";
-            recognition.maxAlternatives = 1;
-            recognition.onend = function () {
-              // Restart speech recognition when it ends
-              recognition.start();
-            };
-            recognition.onerror = function (event) {
-              console.error("Speech recognition error:", event.error);
-            };
-            recognition.start();
-
             source.connect(analyser);
+            initRecognition();
+            recognition.start();
+            isListening = true;
+            // Event listener for when the speech recognition receives results
             // for returning my voice
             // source.connect(ctx.destination);
             analyser.fftSize = 64;
@@ -91,16 +79,47 @@
         }
       }
 
-      window.addEventListener("message", (ev) => {
-        if (ev.origin == "http://localhost:4200") {
-          if (ev.data == "hello") {
-            startUserMedia();
-          } else {
-            console.log("i am here");
-            stopUserMedia();
+      //   window.addEventListener("message", (ev) => {
+      //     if (ev.origin == "http://localhost:4200") {
+      //       if (ev.data == "hello") {
+      //         startUserMedia();
+      //       } else {
+      //         console.log("i am here");
+      //         stopUserMedia();
+      //       }
+      //     }
+      //   });
+      startUserMedia();
+
+      function initRecognition() {
+        recognition = new (window.SpeechRecognition ||
+          window.webkitSpeechRecognition ||
+          window.mozSpeechRecognition ||
+          window.msSpeechRecognition)();
+        recognition.continuous = true;
+        recognition.interimResults = false;
+
+        recognition.onresult = (event) => {
+          console.log(event);
+          const transcript = Array.from(e.results) // e.results is a list of all the words that have been recognized
+            .map((result) => result[0]) // result[0] is the first alternative of the most recent SpeechRecognitionResult
+            .map((result) => result.transcript) // result.transcript is the recognized word
+            .join(""); // join all the words into a single string
+          this.tempWords = transcript; // set tempWords to the string of all the words
+          console.log("tempwords : ", transcript);
+        };
+        // Event listener for when the speech recognition starts
+        recognition.onstart = (e) => {
+          console.log("Recognition started.");
+        };
+
+        // Event listener for when the speech recognition ends
+        recognition.onend = () => {
+          if (isListening) {
+            recognition.start();
           }
-        }
-      });
+        };
+      }
     </script>
   </body>
 </html>
