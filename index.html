@@ -14,43 +14,48 @@
     <div class="play">
       <!-- <div class="btn btn-play"></div> -->
     </div>
+    <script
+      src="https://cdn.jsdelivr.net/npm/microsoft-cognitiveservices-speech-sdk@latest/distrib/browser/microsoft.cognitiveservices.speech.sdk.bundle-min.js"
+    ></script>
     <script>
+      var SpeechSDK;
       const visualizer = document.querySelector(".visualizer");
-
-      let recognition;
-      let isListening = false;
       let mediaStream;
 
-      function initRecognition() {
-        if (!recognition) {
-          recognition = new (window.SpeechRecognition ||
-            window.webkitSpeechRecognition ||
-            window.mozSpeechRecognition ||
-            window.msSpeechRecognition)();
-          recognition.continuous = false;
-          recognition.interimResults = true;
-        }
+      function ConvertAudioStreamToText(stream) {
+        const speechConfig = SpeechSDK.SpeechConfig.fromSubscription(
+          "f882ed4d20c849ae9ba0579439cb7756",
+          "eastus"
+        );
+        const audioConfig = SpeechSDK.AudioConfig.fromStreamInput(stream);
 
-        recognition.onresult = (event) => {
-          console.log(event);
-          const transcript = Array.from(event.results) // e.results is a list of all the words that have been recognized
-            .map((result) => result[0]) // result[0] is the first alternative of the most recent SpeechRecognitionResult
-            .map((result) => result.transcript) // result.transcript is the recognized word
-            .join(""); // join all the words into a single string
-          transcript; // set tempWords to the string of all the words
-          console.log("tempwords : ", transcript);
-        };
-        // Event listener for when the speech recognition starts
-        recognition.onstart = (e) => {
-          console.log("Recognition started.");
+        const recognizer = new SpeechSDK.SpeechRecognizer(
+          speechConfig,
+          audioConfig
+        );
+
+        recognizer.recognizing = (s, e) => {
+          console.log(`Recognizing: ${e.result.text}`);
         };
 
-        // Event listener for when the speech recognition ends
-        recognition.onend = () => {
-          if (isListening) {
-            recognition.start();
+        recognizer.recognized = (s, e) => {
+          if (e.result.reason === sdk.ResultReason.RecognizedSpeech) {
+            console.log(`Recognized: ${e.result.text}`);
           }
         };
+
+        recognizer.startContinuousRecognitionAsync();
+
+        // Stop recognition after a certain duration or when needed
+        // recognizer.stopContinuousRecognitionAsync();
+
+        // Handle errors
+        recognizer.sessionStopped = (s, e) => {
+          console.log(`Session stopped. Reason: ${e.reason}`);
+        };
+
+        // Return the recognizer object if needed
+        return recognizer;
       }
 
       function startUserMedia() {
@@ -62,9 +67,8 @@
             const analyser = ctx.createAnalyser();
             const source = ctx.createMediaStreamSource(mediaStream);
             source.connect(analyser);
-            initRecognition();
-            recognition.start();
-            isListening = true;
+
+            var recognizer = ConvertAudioStreamToText(stream);
             // Event listener for when the speech recognition receives results
             // for returning my voice
             // source.connect(ctx.destination);
