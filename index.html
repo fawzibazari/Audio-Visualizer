@@ -14,9 +14,7 @@
     <div class="play">
       <!-- <div class="btn btn-play"></div> -->
     </div>
-    <script
-      src="https://cdn.jsdelivr.net/npm/microsoft-cognitiveservices-speech-sdk@latest/distrib/browser/microsoft.cognitiveservices.speech.sdk.bundle-min.js"
-    ></script>
+    <script src="https://cdn.jsdelivr.net/npm/microsoft-cognitiveservices-speech-sdk@latest/distrib/browser/microsoft.cognitiveservices.speech.sdk.bundle-min.js"></script>
     <script>
       var SpeechSDK;
       const visualizer = document.querySelector(".visualizer");
@@ -35,14 +33,20 @@
         );
 
         recognizer.recognizing = (s, e) => {
-          console.log(`Recognizing: ${e.result.text}`);
+          window.parent.postMessage(
+            {
+              type: "button-click",
+              message: e.result.text,
+            },
+            "*"
+          );
         };
 
-        recognizer.recognized = (s, e) => {
-          if (e.result.reason === sdk.ResultReason.RecognizedSpeech) {
-            console.log(`Recognized: ${e.result.text}`);
-          }
-        };
+        // recognizer.recognized = (s, e) => {
+        //   if (e.result.reason === sdk.ResultReason.RecognizedSpeech) {
+        //     console.log(`Recognized: ${e.result.text}`);
+        //   }
+        // };
 
         recognizer.startContinuousRecognitionAsync();
 
@@ -68,7 +72,7 @@
             const source = ctx.createMediaStreamSource(mediaStream);
             source.connect(analyser);
 
-            var recognizer = ConvertAudioStreamToText(stream);
+            const recognizer = ConvertAudioStreamToText(stream);
             // Event listener for when the speech recognition receives results
             // for returning my voice
             // source.connect(ctx.destination);
@@ -113,20 +117,20 @@
         if (mediaStream) {
           mediaStream.getTracks().forEach((track) => track.stop());
           mediaStream = null;
+          
         }
       }
 
-      //   window.addEventListener("message", (ev) => {
-      //     if (ev.origin == "http://localhost:4200") {
-      //       if (ev.data == "hello") {
-      //         startUserMedia();
-      //       } else {
-      //         console.log("i am here");
-      //         stopUserMedia();
-      //       }
-      //     }
-      //   });
-      startUserMedia();
+        window.addEventListener("message", (ev) => {
+          if (ev.origin == "http://localhost:4200") {
+            if (ev.data == "hello") {
+              startUserMedia();
+            } else {
+              stopUserMedia();
+            }
+          }
+        });
+    //   startUserMedia();
     </script>
   </body>
 </html>
